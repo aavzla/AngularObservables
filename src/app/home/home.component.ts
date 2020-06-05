@@ -13,11 +13,13 @@ import {
 export class HomeComponent implements OnInit, OnDestroy {
 
   /*
-   * This is a property subscription to hold our instanciated subscription,
-   * so we can destroy it when we change of component, and prevent memory leak.
+   * These are properties subscription to hold our instanciated subscriptions,
+   * so we can destroy them when we change of component, and prevent memory leak.
    * Please visit, https://rxjs-dev.firebaseapp.com/guide/observable.
   */
   private firstObsSubscription: Subscription
+  private errorObsSubscription: Subscription
+  private completeObsSubscription: Subscription
 
   constructor() { }
 
@@ -50,7 +52,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     //The Observable.create() method is deprecated now.
     //Here is the implementation with the current approach.
-    const customInternalObservable: Observable<number> = new Observable(
+    let customInternalObservable: Observable<number> = new Observable(
       observer => {
         //This is a counter for the next execution of the observer.
         let count: number = 0;
@@ -64,14 +66,70 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.firstObsSubscription = customInternalObservable.subscribe(
       data => {
-        console.log(data);
+        console.log('firstObsSubscription - the value is ' + data);
+      }
+    );
+
+    //Here, we implement a custom observable that throws an error.
+    customInternalObservable = new Observable(
+      observer => {
+        //This is a counter for the next execution of the observer.
+        let count: number = 0;
+
+        //Here, we are forcing an error, so we can handle the error.
+        setInterval(() => {
+          if (count > 3) {
+            observer.error(new Error('Count is greater than 3!'));
+          }
+          observer.next(count);
+          count++;
+        }, 1000);
+      }
+    );
+
+    this.errorObsSubscription = customInternalObservable.subscribe(
+      data => {
+        console.log('errorObsSubscription - the value is ' + data);
+      }, error => {
+        console.log('errorObsSubscription - the error message receive was ' + error);
+        alert(error.message);
+      }
+    );
+
+    //Here, we implement a custom observable that complete.
+    customInternalObservable = new Observable(
+      observer => {
+        //This is a counter for the next execution of the observer.
+        let count: number = 0;
+
+        //Here, we are forcing to complete, so we can handle the completion.
+        setInterval(() => {
+          if (count === 5) {
+            observer.complete();
+          }
+          observer.next(count);
+          count++;
+        }, 1000);
+      }
+    );
+
+    this.completeObsSubscription = customInternalObservable.subscribe(
+      data => {
+        console.log('completeObsSubscription - the value is ' + data);
+      }, error => {
+        console.log('completeObsSubscription - the error message receive was ' + error);
+        alert(error.message);
+      }, () => {
+        console.log('completeObsSubscription - Completed!');
       }
     );
   }
 
   ngOnDestroy() {
-    //Here, we destroy our instanciated component
+    //Here, we destroy our instantiated subscriptions.
     this.firstObsSubscription.unsubscribe();
+    this.errorObsSubscription.unsubscribe();
+    this.completeObsSubscription.unsubscribe();
   }
 
 }
