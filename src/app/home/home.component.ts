@@ -4,6 +4,7 @@ import {
   Subscription,
   Observable
 } from 'rxjs'
+import { map, filter } from 'rxjs/operators'
 
 @Component({
   selector: 'app-home',
@@ -20,6 +21,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private firstObsSubscription: Subscription
   private errorObsSubscription: Subscription
   private completeObsSubscription: Subscription
+  private secondObsSubscription: Subscription
 
   constructor() { }
 
@@ -123,6 +125,47 @@ export class HomeComponent implements OnInit, OnDestroy {
         console.log('completeObsSubscription - Completed!');
       }
     );
+
+    //Here, we implement the pipe with map and filter to a custom observable that complete.
+    customInternalObservable = new Observable(
+      observer => {
+        //This is a counter for the next execution of the observer.
+        let count: number = 0;
+
+        //Here, we are forcing to complete, so we can handle the completion.
+        setInterval(() => {
+          if (count === 5) {
+            observer.complete();
+          }
+          observer.next(count);
+          count++;
+        }, 1000);
+      }
+    );
+
+    //To check more operators, please visit https://www.learnrxjs.io/learn-rxjs/operators.
+    this.secondObsSubscription = customInternalObservable.pipe(filter(
+      //Here, we filter the data received by a bool.
+      //We pass the data to the map function if this evaluation is true.
+      data => {
+        //In this case, the first number will be skipped.
+        return data > 0;
+      }
+    ), map(
+      //Here, we map the data of type number received and transformed to a type string.
+      (data: number) => {
+        return 'Round ' + (data + 1);
+      }
+    )).subscribe(
+      data => {
+        console.log('secondObsSubscription - the value is ' + data);
+      }, error => {
+        console.log('secondObsSubscription - the error message receive was ' + error);
+        alert(error.message);
+      }, () => {
+        console.log('secondObsSubscription - Completed!');
+      }
+    );
   }
 
   ngOnDestroy() {
@@ -130,6 +173,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.firstObsSubscription.unsubscribe();
     this.errorObsSubscription.unsubscribe();
     this.completeObsSubscription.unsubscribe();
+    this.secondObsSubscription.unsubscribe();
   }
 
 }
